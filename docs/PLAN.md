@@ -68,4 +68,5 @@ Smaller decisions:
 
 - I did items 7, 8 and 9 before item 6. Measuring needs the COCO task, and the dataset wasn't extracted yet, so I moved on to the work that didn't depend on it instead of waiting.
 - Setup took longer than the 0:30 I planned. `yarn install` fails on Windows (it can't create workspace symlinks), so the UI is built in Docker with CVAT's own `Dockerfile.ui`. The webpack build ran Docker out of memory while the stack was up, so I stop the stack for each UI build. That's slow, so I batched UI changes together.
+- Item 6 took longer than planned because my first measurement was wrong. It used Basic auth, so it mostly timed password hashing. After fixing that, the 10x task still needed a change, so I added a cache keyed on the task's `updated_date`. It also takes away most of the cost named in the decision record above: N open pages now share one count query per change.
 - The plan didn't mention linting. I ran the repo's ESLint, black and isort over my files. ESLint caught one indentation mistake in an earlier commit, which I fixed in its own commit.
