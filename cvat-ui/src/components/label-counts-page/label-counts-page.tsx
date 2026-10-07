@@ -12,6 +12,7 @@ import Text from 'antd/lib/typography/Text';
 import Result from 'antd/lib/result';
 import Empty from 'antd/lib/empty';
 import Button from 'antd/lib/button';
+import Switch from 'antd/lib/switch';
 
 import { getCore } from 'cvat-core-wrapper';
 import GoBackButton from 'components/common/go-back-button';
@@ -25,6 +26,7 @@ export interface LabelCount {
     name: string;
     color: string;
     count: number;
+    by_type: Record<string, number>;
 }
 
 interface LabelCounts {
@@ -49,6 +51,7 @@ async function fetchLabelCounts(taskId: number): Promise<LabelCounts> {
 function LabelCountsPage(): JSX.Element {
     const taskId = +useParams<{ tid: string }>().tid;
     const [state, setState] = useState<PageState>({ status: 'loading' });
+    const [splitByType, setSplitByType] = useState(false);
     // Only the newest request may update the page, so a slow response can't overwrite a newer one.
     const latestRequest = useRef(0);
 
@@ -97,10 +100,16 @@ function LabelCountsPage(): JSX.Element {
         const { total, labels } = state.counts;
         content = (
             <>
-                <Text type='secondary'>
-                    {`${total} annotations across ${labels.length} labels`}
-                </Text>
-                <LabelCountsChart labels={labels} />
+                <Row justify='space-between' align='middle'>
+                    <Text type='secondary'>
+                        {`${total} annotations across ${labels.length} labels`}
+                    </Text>
+                    <Text>
+                        <Switch size='small' checked={splitByType} onChange={setSplitByType} />
+                        {' Split by shape type'}
+                    </Text>
+                </Row>
+                <LabelCountsChart labels={labels} splitByType={splitByType} />
             </>
         );
     }
