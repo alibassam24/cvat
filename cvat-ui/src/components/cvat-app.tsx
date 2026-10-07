@@ -570,7 +570,7 @@ class CVATApplication extends React.PureComponent<CVATAppProps & RouteComponentP
                                         <Route exact path='/tasks/:tid/quality-control' component={QualityControlPage} />
                                         <Route exact path='/tasks/:tid/analytics' component={AnalyticsReportPage} />
                                         <Route exact path='/tasks/:tid/consensus' component={ConsensusManagementPage} />
-                                    <Route exact path='/tasks/:tid/label-counts' component={LabelCountsPage} />
+                                        <Route exact path='/tasks/:tid/label-counts' component={LabelCountsPage} />
                                         <Route exact path='/tasks/:id/jobs/create' component={CreateJobPage} />
                                         <Route exact path='/tasks/:id/guide' component={AnnotationGuidePage} />
                                         <Route exact path='/tasks/:tid/jobs/:jid' component={AnnotationPageContainer} />
