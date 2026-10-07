@@ -6,6 +6,7 @@ import React, {
     useCallback, useEffect, useRef, useState,
 } from 'react';
 import { useParams } from 'react-router';
+import { useSelector } from 'react-redux';
 import { Row, Col } from 'antd/lib/grid';
 import Title from 'antd/lib/typography/Title';
 import Text from 'antd/lib/typography/Text';
@@ -13,11 +14,14 @@ import Result from 'antd/lib/result';
 import Empty from 'antd/lib/empty';
 import Button from 'antd/lib/button';
 import Switch from 'antd/lib/switch';
+import Tag from 'antd/lib/tag';
 
 import { getCore } from 'cvat-core-wrapper';
+import { CombinedState } from 'reducers';
 import GoBackButton from 'components/common/go-back-button';
 import CVATLoadingSpinner from 'components/common/loading-spinner';
 import LabelCountsChart from './label-counts-chart';
+import useLiveLabelCounts, { LiveStatus } from './use-live-label-counts';
 
 const core = getCore();
 
@@ -39,6 +43,13 @@ type PageState =
     | { status: 'loading' }
     | { status: 'error'; message: string }
     | { status: 'ready'; counts: LabelCounts };
+
+const LIVE_STATUS_TAGS: Record<LiveStatus, { color: string; text: string }> = {
+    connecting: { color: 'default', text: 'Connecting' },
+    live: { color: 'success', text: 'Live' },
+    reconnecting: { color: 'warning', text: 'Reconnecting' },
+    stopped: { color: 'default', text: 'Live updates off' },
+};
 
 async function fetchLabelCounts(taskId: number): Promise<LabelCounts> {
     const response = await core.server.request<{ data: LabelCounts }>(
@@ -76,6 +87,17 @@ function LabelCountsPage(): JSX.Element {
             latestRequest.current += 1;
         };
     }, [load]);
+
+    const organizationSlug = useSelector(
+        (combinedState: CombinedState) => combinedState.organizations.current?.slug ?? '',
+    );
+    const onSnapshot = useCallback((counts: LabelCounts): void => {
+        // A pushed snapshot is newer than any REST response still in flight.
+        latestRequest.current += 1;
+        setState({ status: 'ready', counts });
+    }, []);
+    const liveStatus = useLiveLabelCounts(taskId, organizationSlug, onSnapshot);
+    const liveTag = LIVE_STATUS_TAGS[liveStatus];
 
     let content: JSX.Element;
     if (state.status === 'loading') {
@@ -120,7 +142,8 @@ function LabelCountsPage(): JSX.Element {
                 <Col span={22} xl={18} xxl={14}>
                     <GoBackButton />
                     <Title level={4} className='cvat-text-color'>
-                        {`Annotations per label, task #${taskId}`}
+                        {`Annotations per label, task #${taskId} `}
+                        <Tag color={liveTag.color} className='cvat-label-counts-live-status'>{liveTag.text}</Tag>
                     </Title>
                     {content}
                 </Col>
