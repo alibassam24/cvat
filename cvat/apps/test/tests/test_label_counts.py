@@ -82,7 +82,11 @@ class TaskLabelCountsTestCase(ApiTestBase):
         add_shape(self.job, self.car, ShapeType.POLYGON)
         LabeledTrack.objects.create(job=self.job, label=self.car, frame=0)
 
-        car = next(label for label in self._get_counts(self.owner).json()["labels"] if label["name"] == "car")
+        car = next(
+            label
+            for label in self._get_counts(self.owner).json()["labels"]
+            if label["name"] == "car"
+        )
 
         self.assertEqual(car["count"], 4)
         self.assertEqual(car["by_type"], {"rectangle": 1, "polygon": 2, "track": 1})

@@ -33,8 +33,14 @@ DEBOUNCE_SECONDS = 0.3
 CLOSE_CODE_BASE = 4000
 CLOSE_CODE_INTERNAL_ERROR = 1011
 # Headers that describe the WebSocket handshake itself, not the client.
-HANDSHAKE_HEADERS = {b"upgrade", b"connection", b"sec-websocket-key", b"sec-websocket-version",
-                     b"sec-websocket-extensions", b"sec-websocket-protocol"}
+HANDSHAKE_HEADERS = {
+    b"upgrade",
+    b"connection",
+    b"sec-websocket-key",
+    b"sec-websocket-version",
+    b"sec-websocket-extensions",
+    b"sec-websocket-protocol",
+}
 
 
 def channel_name(task_id: int) -> str:
@@ -67,6 +73,9 @@ def _is_same_origin(scope) -> bool:
 async def _fetch_counts(django_app, ws_scope, task_id: int) -> tuple[int, bytes]:
     """Run GET .../label-counts through the full Django stack as the socket's client."""
     path = f"/api/test/tasks/{task_id}/label-counts"
+    client_headers = [
+        (name, value) for name, value in ws_scope["headers"] if name not in HANDSHAKE_HEADERS
+    ]
     http_scope = {
         "type": "http",
         "asgi": ws_scope.get("asgi", {"version": "3.0"}),
@@ -77,9 +86,7 @@ async def _fetch_counts(django_app, ws_scope, task_id: int) -> tuple[int, bytes]
         "raw_path": path.encode(),
         "query_string": ws_scope.get("query_string", b""),
         "root_path": ws_scope.get("root_path", ""),
-        "headers": [
-            (name, value) for name, value in ws_scope["headers"] if name not in HANDSHAKE_HEADERS
-        ] + [(b"accept", CVATAPIRenderer.media_type.encode())],
+        "headers": [*client_headers, (b"accept", CVATAPIRenderer.media_type.encode())],
         "client": ws_scope.get("client"),
         "server": ws_scope.get("server"),
     }
@@ -165,8 +172,11 @@ class _LabelCountsSocket:
             listener.cancel()
             return
 
-        tasks = {listener, asyncio.create_task(self._push_changes(changed)),
-                 asyncio.create_task(self._wait_for_disconnect())}
+        tasks = {
+            listener,
+            asyncio.create_task(self._push_changes(changed)),
+            asyncio.create_task(self._wait_for_disconnect()),
+        }
         done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
         for task in pending:
             task.cancel()
