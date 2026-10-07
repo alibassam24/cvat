@@ -91,6 +91,16 @@ class TaskLabelCountsTestCase(ApiTestBase):
         self.assertEqual(car["count"], 4)
         self.assertEqual(car["by_type"], {"rectangle": 1, "polygon": 2, "track": 1})
 
+    def test_cached_counts_refresh_when_the_task_is_touched(self):
+        self.assertEqual(self._counts_by_name(self._get_counts(self.owner))["car"], 0)
+
+        # Real annotation writes always end with task.touch(); this one doesn't yet.
+        add_shape(self.job, self.car)
+        self.assertEqual(self._counts_by_name(self._get_counts(self.owner))["car"], 0)
+
+        Task.objects.get(id=self.task.id).touch()
+        self.assertEqual(self._counts_by_name(self._get_counts(self.owner))["car"], 1)
+
     def test_ignores_ground_truth_jobs(self):
         add_shape(self.job, self.car)
         add_shape(add_job(self.task, JobType.GROUND_TRUTH), self.car)
