@@ -68,8 +68,9 @@ Written before starting. Ticked at the end, each with the evidence next to it. A
   Evidence: `git log 28f5bffaf..dev-test01`. The plan was committed first and contains no code.
 - [x] Everything I didn't finish is listed below, with the reason.
   Evidence: see "Not finished".
-- [ ] PR opened from `dev-test01` into my own fork, not upstream CVAT.
-  Evidence:
+- [x] PR opened from `dev-test01` into my own fork, not upstream CVAT.
+  Evidence: https://github.com/alibassam24/cvat/pull/1 (into alibassam24/cvat `main`).
+  I merged it by mistake; it still shows all 16 commits and the full diff.
 
 ## Not finished
 
