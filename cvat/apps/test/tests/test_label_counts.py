@@ -23,9 +23,11 @@ def add_job(task: Task, job_type: JobType = JobType.ANNOTATION) -> Job:
     return Job.objects.create(segment=segment, type=job_type)
 
 
-def add_shape(job: Job, label: Label, **kwargs) -> LabeledShape:
+def add_shape(
+    job: Job, label: Label, shape_type: ShapeType = ShapeType.RECTANGLE, **kwargs
+) -> LabeledShape:
     return LabeledShape.objects.create(
-        job=job, label=label, frame=0, type=ShapeType.RECTANGLE, points=[0, 0, 1, 1], **kwargs
+        job=job, label=label, frame=0, type=shape_type, points=[0, 0, 1, 1], **kwargs
     )
 
 
@@ -73,6 +75,17 @@ class TaskLabelCountsTestCase(ApiTestBase):
 
         self.assertEqual(counts["car"], 1)
         self.assertEqual(counts["person"], 1)
+
+    def test_breaks_counts_down_by_shape_type(self):
+        add_shape(self.job, self.car)
+        add_shape(self.job, self.car, ShapeType.POLYGON)
+        add_shape(self.job, self.car, ShapeType.POLYGON)
+        LabeledTrack.objects.create(job=self.job, label=self.car, frame=0)
+
+        car = next(label for label in self._get_counts(self.owner).json()["labels"] if label["name"] == "car")
+
+        self.assertEqual(car["count"], 4)
+        self.assertEqual(car["by_type"], {"rectangle": 1, "polygon": 2, "track": 1})
 
     def test_ignores_ground_truth_jobs(self):
         add_shape(self.job, self.car)

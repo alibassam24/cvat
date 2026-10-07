@@ -8,6 +8,10 @@ class LabelCountSerializer(serializers.Serializer):
     name = serializers.CharField()
     color = serializers.CharField()
     count = serializers.IntegerField()
+    by_type = serializers.DictField(
+        child=serializers.IntegerField(),
+        help_text="Count per shape type, with 'track' and 'tag' as their own keys",
+    )
 
 
 class TaskLabelCountsSerializer(serializers.Serializer):
