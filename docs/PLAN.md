@@ -50,8 +50,22 @@ To check the counts are right, I'll count the same images straight from `instanc
 
 ## Decision record
 
-(filled in at the end, if I reach item 10)
+**Live updates: push a full snapshot, produced by the REST endpoint itself.**
+
+What I did: every annotation save already ends with `task.touch()`, so a `post_save` receiver on Task publishes the task id to Redis after commit. The socket is a small ASGI wrapper in front of Django. When it hears about a change it runs `GET .../label-counts` in-process with the client's own cookies and sends the response body as is.
+
+What I rejected: Django Channels, with the server computing what changed and pushing deltas.
+
+Why: Channels isn't in the image, so it meant a new dependency, a server image rebuild (on a 15 GB laptop that was already running out of memory building the UI), and a second login and permission path to keep in step with the REST one. Deltas also need the client to have seen every message. With snapshots, a client that was offline is correct again after the first message, so reconnecting (item 9) is just opening the socket again.
+
+What it cost: every change makes every open page run the count query once, instead of the server sending a few bytes. Ten people watching a task during an import means ten queries per change. The 300 ms debounce helps, because an import touches the task once per job, but it doesn't remove the cost. If that ever mattered I would cache the counts per task and clear the cache from the same signal.
+
+Smaller decisions:
+- Permissions reuse the task "view" rule instead of a new rego file. Less to maintain, and it can't drift from what the task page allows.
+- The page calls the API through `core.server.request` rather than a new typed method in cvat-core. That's one file instead of four, but the response type is declared by hand in the page.
 
 ## Changes to this plan
 
-(anything that changed while I was working, and why)
+- I did items 7, 8 and 9 before item 6. Measuring needs the COCO task, and the dataset wasn't extracted yet, so I moved on to the work that didn't depend on it instead of waiting.
+- Setup took longer than the 0:30 I planned. `yarn install` fails on Windows (it can't create workspace symlinks), so the UI is built in Docker with CVAT's own `Dockerfile.ui`. The webpack build ran Docker out of memory while the stack was up, so I stop the stack for each UI build. That's slow, so I batched UI changes together.
+- The plan didn't mention linting. I ran the repo's ESLint, black and isort over my files. ESLint caught one indentation mistake in an earlier commit, which I fixed in its own commit.
